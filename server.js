@@ -7,6 +7,8 @@ const app = express();
 const port = Number(process.env.PORT || 10000);
 const network = "eip155:196";
 const payTo = process.env.PAY_TO_ADDRESS;
+const bridgeUrl = process.env.CODEX_BRIDGE_URL;
+const bridgeToken = process.env.CODEX_BRIDGE_TOKEN;
 
 if (!payTo) {
   throw new Error("PAY_TO_ADDRESS is required");
@@ -17,6 +19,10 @@ for (const name of requiredSecrets) {
   if (!process.env[name]) {
     throw new Error(`${name} is required`);
   }
+}
+
+if (!bridgeUrl || !bridgeToken) {
+  throw new Error("CODEX_BRIDGE_URL and CODEX_BRIDGE_TOKEN are required");
 }
 
 const facilitator = new OKXFacilitatorClient({
@@ -61,20 +67,33 @@ app.post("/v1/decision", (req, res) => {
     });
   }
 
-  return res.json({
-    service: "价值棱镜",
-    status: "prototype",
-    question: question.trim(),
-    context,
-    constraints,
-    analysis: {
-      summary: "已收到决策问题。下一步将接入实时资料和思维框架分析。",
-      perspectives: [],
-      risks: ["当前原型尚未连接实时数据或模型服务"],
-      next_step: "补充目标、时间范围、预算和风险承受能力",
+  fetch(`${bridgeUrl.replace(/\/$/, "")}/analyze`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${bridgeToken}`,
+      "content-type": "application/json",
     },
-    disclaimer: "这是决策研究辅助信息，不构成投资建议或收益承诺。",
-  });
+    body: JSON.stringify({ question: question.trim(), context, constraints }),
+  })
+    .then(async (bridgeResponse) => {
+      const payload = await bridgeResponse.json().catch(() => ({}));
+      if (!bridgeResponse.ok) {
+        return res.status(502).json({
+          error: "local Codex bridge unavailable",
+          detail: payload.error || `bridge returned ${bridgeResponse.status}`,
+        });
+      }
+      return res.json({
+        service: "价值棱镜",
+        status: "ok",
+        question: question.trim(),
+        context,
+        constraints,
+        analysis: payload.analysis,
+        disclaimer: "这是决策研究辅助信息，不构成投资建议或收益承诺。",
+      });
+    })
+    .catch(() => res.status(502).json({ error: "local Codex bridge unavailable" }));
 });
 
 app.listen(port, "0.0.0.0", () => {
