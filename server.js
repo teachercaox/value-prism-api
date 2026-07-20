@@ -50,7 +50,7 @@ app.use(
           payTo,
           price: "$0.01",
         },
-        description: "Value Prism investment and business decision analysis",
+        description: "Value Prism Meme personality decision card",
         mimeType: "application/json",
       },
     },
@@ -89,7 +89,8 @@ app.post("/v1/decision", (req, res) => {
         question: question.trim(),
         context,
         constraints,
-        analysis: payload.analysis,
+        answer: payload.answer || "分析服务返回了无法识别的结果。",
+        card: payload.card || null,
         disclaimer: "这是决策研究辅助信息，不构成投资建议或收益承诺。",
       });
     })
