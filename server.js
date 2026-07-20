@@ -4,6 +4,7 @@ import { ExactEvmScheme } from "@okxweb3/x402-evm/exact/server";
 import { OKXFacilitatorClient } from "@okxweb3/x402-core";
 
 const app = express();
+app.set("trust proxy", 1);
 const port = Number(process.env.PORT || 10000);
 const network = "eip155:196";
 const payTo = process.env.PAY_TO_ADDRESS;
