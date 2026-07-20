@@ -45,12 +45,14 @@ app.use(
   paymentMiddleware(
     {
       "POST /v1/decision": {
-        accepts: {
-          scheme: "exact",
-          network,
-          payTo,
-          price: "$0.01",
-        },
+        accepts: [
+          {
+            scheme: "exact",
+            network,
+            payTo,
+            price: "$0.01",
+          },
+        ],
         description: "Value Prism Meme personality decision card",
         mimeType: "application/json",
       },
